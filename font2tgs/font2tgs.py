@@ -241,7 +241,8 @@ def build_lottie(name, shapes, color, size, animate):
 def write_tgs(path, lottie):
     data = json.dumps(lottie, separators=(",", ":"), ensure_ascii=False).encode()
     with open(path, "wb") as f:
-        with gzip.GzipFile(fileobj=f, mode="wb", compresslevel=9, mtime=0) as gz:
+        # filename="" — без поля FNAME в заголовке, как у родных TGS Телеграма
+        with gzip.GzipFile(filename="", fileobj=f, mode="wb", compresslevel=9, mtime=0) as gz:
             gz.write(data)
     return path.stat().st_size
 
