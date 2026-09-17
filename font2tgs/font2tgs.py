@@ -2,7 +2,8 @@
 """font2tgs — превращает буквы шрифта в .tgs-файлы для кастомных эмодзи Telegram.
 
 Каждый символ становится отдельным .tgs (Lottie JSON, сжатый gzip'ом):
-канвас 100x100 для эмодзи (или 512x512 для стикеров), 60 fps, лимит 64 КБ.
+канвас 512x512 (Telegram требует ровно 512 для .tgs — и для стикеров,
+и для кастомных эмодзи; клиент сам уменьшает эмодзи), 60 fps, лимит 64 КБ.
 
 Примеры:
     python3 font2tgs.py MyFont.ttf
@@ -278,7 +279,12 @@ def main():
     ap.add_argument("font", help="путь к .ttf/.otf")
     ap.add_argument("--chars", default=DEFAULT_CHARS, help="какие символы генерировать")
     ap.add_argument("--color", type=parse_color, default=parse_color("1E1E1E"), help="цвет заливки, RRGGBB")
-    ap.add_argument("--size", type=int, default=100, choices=[100, 512], help="100 = эмодзи, 512 = стикер")
+    ap.add_argument(
+        "--size",
+        type=int,
+        default=512,
+        help="размер канваса; Telegram требует ровно 512 для .tgs (и стикеров, и эмодзи)",
+    )
     ap.add_argument("--margin", type=float, default=0.08, help="отступ от края, доля канваса")
     ap.add_argument("--animate", choices=["none", "pop"], default="none", help="pop = появление с отскоком")
     ap.add_argument("--out", default="tgs_out", help="куда складывать файлы")
