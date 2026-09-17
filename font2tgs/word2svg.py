@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 import uharfbuzz as hb
+from fontTools.pens.boundsPen import BoundsPen
 from fontTools.pens.recordingPen import DecomposingRecordingPen
 from fontTools.ttLib import TTFont
 
@@ -75,6 +76,13 @@ def main():
     ap.add_argument("--height", type=int, default=512, help="высота канваса SVG")
     ap.add_argument("--margin", type=float, default=0.06, help="отступ, доля высоты")
     ap.add_argument("--out", default="svg_words", help="куда складывать файлы")
+    ap.add_argument(
+        "--gap",
+        type=float,
+        default=None,
+        help="плотный набор: расстояние между КОНТУРАМИ соседних букв в единицах шрифта "
+        "(0 — впритык, отрицательное — нахлёст). Без флага — обычные отступы шрифта.",
+    )
     args = ap.parse_args()
 
     blob = hb.Blob.from_file_path(args.font)
@@ -97,10 +105,25 @@ def main():
 
         pen_parts = []
         x = y = 0
+        prev_ink_right = None
         for info, pos in zip(buf.glyph_infos, buf.glyph_positions):
             glyph_name = glyph_order[info.codepoint]
             rec = DecomposingRecordingPen(glyph_set)
             glyph_set[glyph_name].draw(rec)
+
+            if args.gap is not None:
+                bp = BoundsPen(glyph_set)
+                for op, op_args in rec.value:
+                    getattr(bp, op)(*op_args)
+                if bp.bounds is None:  # пробел и прочие «пустые» глифы
+                    x += pos.x_advance
+                    prev_ink_right = None
+                    continue
+                ink_left, _, ink_right, _ = bp.bounds
+                if prev_ink_right is not None:
+                    x = prev_ink_right + args.gap - ink_left
+                prev_ink_right = x + ink_right
+
             pen = SvgPathPen(x + pos.x_offset, y + pos.y_offset)
             for op, op_args in rec.value:
                 getattr(pen, op)(*op_args)
